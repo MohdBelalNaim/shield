@@ -10,8 +10,10 @@ import Voluteer from "./views/Voluteer";
 import CampaignDetails from "./views/CampaignDetails";
 import StartCampaign from "./views/StartCampaign";
 import Footer from "./components/Footer";
-import Ngo from "./views/Ngo"
-import AllDonations from "./views/AllDonations"
+import Ngo from "./views/Ngo";
+import AllDonations from "./views/AllDonations";
+import AllJoined from "./views/Profile/AllJoined";
+import Requests from "./views/Profile/Requests";
 function App() {
   return (
     <BrowserRouter>
@@ -22,10 +24,12 @@ function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/donate" element={<DonateForm />} />
         <Route path="/volunteer" element={<Voluteer />} />
-        <Route path="/campaign" element={<CampaignDetails />} />
+        <Route path="/campaign/:id" element={<CampaignDetails />} />
         <Route path="/start-volunteer" element={<StartCampaign />} />
-        <Route path="/ngo" element={<Ngo/>} />
-        <Route path="/all-donations" element={<AllDonations/>} />
+        <Route path="/ngo" element={<Ngo />} />
+        <Route path="/all-donations" element={<AllDonations />} />
+        <Route path="/all-joined/:id" element={<AllJoined />} />
+        <Route path="/requests/:id" element={<Requests />} />
       </Routes>
       <Footer />
     </BrowserRouter>

@@ -1,11 +1,73 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import { BsBox, BsPencil, BsPerson, BsPersonCircle, BsX } from "react-icons/bs";
+import Donations from "./Profile/Donations";
+import Campaigns from "./Profile/Campaigns";
+import Volunteering from "./Profile/Volunteering";
+import { useNavigate } from "react-router-dom";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import { db } from "../firebase";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { TailSpin } from "react-loader-spinner";
 
 const Profile = () => {
   const [edit, setEdit] = useState(false);
-  const menu = ["My Donations", "Campaigns", "Volunteering"];
+  const [user, setUser] = useState({});
+  const [uid, setUid] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  async function getUserData() {
+    const ref = query(
+      collection(db, "users"),
+      where("email", "==", localStorage.getItem("user"))
+    );
+    const res = await getDocs(ref);
+    setUser(res?.docs[0]?.data());
+    setUid(res?.docs[0]?.id);
+  }
+
+  useEffect(() => {
+    if (!localStorage.getItem("user")) {
+      navigate("/login");
+    }
+    getUserData();
+  }, []);
+  const menu = {
+    "My Donations": <Donations />,
+    "My Campaigns": <Campaigns />,
+  };
+  const { register, handleSubmit } = useForm();
   const [current, setCurrent] = useState("My Donations");
+  async function updateUser(data) {
+    setLoading(true);
+    const ref = doc(db, "users", uid);
+    try {
+      await updateDoc(ref, {
+        name: data.name,
+        state: data.state,
+        city: data.city,
+        country: data.country,
+      });
+      toast.success("Details updated");
+      getUserData();
+      setLoading(false);
+    } catch (e) {
+      toast.error("Something went wrong");
+      console.log(e);
+      setLoading(false);
+    }
+
+    setEdit(false);
+  }
   return (
     <>
       {edit && (
@@ -18,32 +80,47 @@ const Profile = () => {
               />{" "}
               Edit profile details
             </div>
-            <div className="p-3 grid gap-y-4">
-              <input
-                type="text"
-                className="w-full border p-2 text-sm"
-                placeholder="Full name"
-              />
-              <input
-                type="text"
-                className="w-full border p-2 text-sm"
-                placeholder="City"
-              />
-              <input
-                type="text"
-                className="w-full border p-2 text-sm"
-                placeholder="State"
-              />
+            <form action="" onSubmit={handleSubmit(updateUser)}>
+              <div className="p-3 grid gap-y-4">
+                <input
+                  type="text"
+                  className="w-full border p-2 text-sm"
+                  placeholder="Full name"
+                  {...register("name")}
+                />
+                <input
+                  type="text"
+                  className="w-full border p-2 text-sm"
+                  placeholder="City"
+                  {...register("city")}
+                />
+                <input
+                  type="text"
+                  className="w-full border p-2 text-sm"
+                  placeholder="State"
+                  {...register("state")}
+                />
 
-              <input
-                type="text"
-                className="w-full border p-2 text-sm"
-                placeholder="Country"
-              />
-              <button className="bg-teal-800 text-white text-sm w-full p-2">
-                Submit
-              </button>
-            </div>
+                <input
+                  type="text"
+                  className="w-full border p-2 text-sm"
+                  placeholder="Country"
+                  {...register("country")}
+                />
+                {loading ? (
+                  <button
+                    disabled
+                    className="opacity-50 flex justify-center bg-teal-800 text-white text-sm w-full p-2"
+                  >
+                    <TailSpin height={22} color="white" />
+                  </button>
+                ) : (
+                  <button className="bg-teal-800 text-white text-sm w-full p-2">
+                    Submit
+                  </button>
+                )}
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -53,11 +130,9 @@ const Profile = () => {
           <BsPersonCircle className="mb-3" size={40} />
           <div className="mt-3">
             <div className="text-2xl text-teal-800 text-center">
-              Syed haider abbas
+              {user?.name}
             </div>
-            <div className="mt-1 text-teal-800 text-center">
-              Lucknow, Uttar Pradesh, India
-            </div>
+            <div className="text-sm mt-3">{user?.email}</div>
             <div className="flex justify-center mt-5">
               <button
                 onClick={() => setEdit(true)}
@@ -70,7 +145,7 @@ const Profile = () => {
         </div>
         <div className="border-t">
           <div className="w-[min(560px,96%)] flex justify-between mx-auto">
-            {menu.map((item) => {
+            {Object.keys(menu).map((item) => {
               return (
                 <div
                   onClick={() => setCurrent(item)}
@@ -83,33 +158,7 @@ const Profile = () => {
               );
             })}
           </div>
-          <div className="w-[min(560px,96%)] mx-auto">
-            {"abcdef".split("").map((item, index) => {
-              return (
-                <div className="w-full border rounded p-3 flex gap-4 mt-4">
-                  <img
-                    src="https://picsum.photos/400"
-                    className="size-32 rounded-md"
-                    alt=""
-                  />
-                  <div>
-                    <div className="font-medium">
-                      Timex automatic watch, Silver case, 44mm
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <BsPerson /> Insha hasan
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <BsBox /> 2 units
-                    </div>
-                    <button className="text-xs px-3 py-2 rounded-full bg-red-500 text-white mt-5">
-                      Delete this drive
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <div className="w-[min(560px,96%)] mx-auto">{menu[current]}</div>
         </div>
       </div>
     </>

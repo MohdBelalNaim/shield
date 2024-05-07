@@ -1,4 +1,5 @@
-import React from "react";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   BsArrowRight,
@@ -7,35 +8,68 @@ import {
   BsHandIndex,
   BsPerson,
 } from "react-icons/bs";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { auth } from "../firebase";
+import { toast } from "sonner";
+import { createUser } from "../createUser";
+import { TailSpin } from "react-loader-spinner";
 
 const Signup = () => {
+  const navigate = useNavigate();
   const { register, handleSubmit } = useForm();
+  const [loading, setLoading] = useState(false);
   const inputs = [
     {
       label: "Full Name",
       name: "name",
+      type: "text",
     },
     {
       label: "Email Address",
       name: "email",
+      type: "email",
     },
     {
       label: "Create Password",
       name: "password",
+      type: "password",
     },
     {
       label: "Confirm Password",
+      name: "confirm",
+      type: "password",
     },
   ];
 
   function userSignup(data) {
-    alert(JSON.stringify(data))
+    if (data.password != data.confirm) {
+      toast.error("Create password and confirm password don't match!");
+      return;
+    }
+    setLoading(true);
+    createUserWithEmailAndPassword(auth, data.email, data.password)
+      .then(() => {
+        toast.success("Account created, Login to continue");
+        createUser(data);
+        navigate("/login");
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.log(err.code);
+        if (err.code == "auth/email-already-in-use") {
+          toast.error("This email is already in use!");
+        } else if (err.code == "auth/weak-password") {
+          toast.error("Password length must be atleast 10 characters");
+        } else {
+          toast.error("Something went wrong");
+        }
+        setLoading(false);
+      });
   }
 
   return (
     <div className="grid grid-cols-2">
-      <div className="h-[100dvh] p-24 bg-teal-700 text-white overflow-hidden border-r">
+      <div className="h-[100dvh] p-24 bg-teal-700 text-white overflow-scroll border-r">
         <div className="">
           <div className="text-4xl">
             Let there be a{" "}
@@ -108,10 +142,11 @@ const Signup = () => {
                       {item.label}
                     </label>
                     <input
-                      type="text"
+                      type={item.type}
                       {...register(item.name)}
                       className="border w-full border-gray-300 p-2.5 mb-5 text-sm mt-1"
                       placeholder={`Your ${item.label} here`}
+                      required
                     />
                   </>
                 );
@@ -120,9 +155,18 @@ const Signup = () => {
                 By creating an account with us, You agree on the terms and
                 condtions and the privacy policy
               </div>
-              <button className="w-full flex items-center gap-2 justify-center text-sm bg-teal-600 text-white p-2.5">
-                Signup <BsArrowRight />
-              </button>
+              {loading ? (
+                <button
+                  disabled
+                  className="w-full flex items-center gap-2 justify-center text-sm bg-teal-600 text-white p-2.5 disabled:opacity-40"
+                >
+                  <TailSpin height={22} color="white" />{" "}
+                </button>
+              ) : (
+                <button className="w-full flex items-center gap-2 justify-center text-sm bg-teal-600 text-white p-2.5">
+                  Signup <BsArrowRight />
+                </button>
+              )}
             </form>
             <Link to="/login">
               <div className="text-center mt-5 underline">

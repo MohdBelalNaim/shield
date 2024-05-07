@@ -1,11 +1,26 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import { BsHeart, BsPerson, BsPhone } from "react-icons/bs";
+import { collection, getDocs, limit, query } from "firebase/firestore";
+import { db } from "../firebase";
+import ProductCard from "../components/ProductCard";
+import { TailSpin } from "react-loader-spinner";
 
 const AllDonations = () => {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
     window.scrollTo(0, 0);
+    async function getData() {
+      setLoading(true);
+      const q = query(collection(db, "donations"));
+      const data = await getDocs(q);
+      setProducts(data.docs);
+      setLoading(false);
+    }
+    getData();
   }, []);
+
   return (
     <div>
       <Navbar />
@@ -13,41 +28,17 @@ const AllDonations = () => {
         <div className="text-xl font-bold mb-4">
           All goods available for free
         </div>
-        <div className="grid grid-cols-3 gap-4">
-          {"abcdef".split("").map((item, index) => {
-            return (
-              <div className="rounded-md border overflow-hidden bg-white">
-                <div className="h-[200px]">
-                  <img
-                    src={`https://picsum.photos/400?${index}`}
-                    className="object-cover h-full w-full"
-                    alt=""
-                  />
-                </div>
-                <div className="px-3.5 py-6">
-                  <div className="font-medium">
-                    Timex automatic watch 44 mm, Silver case, With chronograph
-                    for free
-                  </div>
-                  <div className="flex items-center mt-3 bg-teal-100 px-4 text-xs gap-3 w-max border rounded-full p-1.5">
-                    <BsPerson size={16} /> Insha hasan is donating this product
-                  </div>
-                </div>
-                <div className="border-t px-3 py-4 flex gap-3">
-                  <div
-                    onClick={() => setAcquire(true)}
-                    className="cursor-pointer flex items-center gap-2 text-xs bg-teal-800 w-max text-white px-3 py-2 rounded-full"
-                  >
-                    <BsHeart /> Request to acquire
-                  </div>
-                  <div className="flex items-center gap-2 text-xs bg-teal-800 w-max text-white px-3 py-2 rounded-full">
-                    <BsPhone /> Call the donor
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {loading ? (
+          <div className="h-[240px] grid place-items-center">
+            <TailSpin height={52} color="teal" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-4">
+            {products.map((item, index) => {
+              return <ProductCard product={item.data()} id={item.id} />;
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

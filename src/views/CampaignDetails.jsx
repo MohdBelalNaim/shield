@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import {
   BsCalendar,
@@ -9,12 +9,78 @@ import {
   BsPersonAdd,
   BsX,
 } from "react-icons/bs";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  query,
+  where,
+} from "firebase/firestore";
+import { db } from "../firebase";
+import { TailSpin } from "react-loader-spinner";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 const CampaignDetails = () => {
+  const [data, setData] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const { id } = useParams();
+  const { handleSubmit, register } = useForm();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    async function getData() {
+      setLoading(true);
+      const docref = doc(db, "campaigns", id);
+      const data = await getDoc(docref);
+      setData(data.data());
+      setLoading(false);
+    }
+    getData();
+  }, []);
+
+  async function joinSession(data) {
+    setSubmitting(true);
+    data.id = id;
+    try {
+      // Create a query to check for documents with the email
+      const q = query(
+        collection(db, "volunteers"),
+        where("email", "==", data.email),
+        where("id", "==", id),
+        limit(1)
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        await addDoc(collection(db, "volunteers"), data);
+        toast.success("Request submitted successfully!");
+        setSubmitting(false);
+        setForm(false);
+      } else {
+        toast.error(
+          "You have already registered for this volunteering session!"
+        );
+
+        setSubmitting(false);
+      }
+    } catch (error) {
+      console.error("Error getting or adding documents:", error);
+    }
+  }
+
   const [form, setForm] = useState(false);
   return (
     <div>
+      {loading && (
+        <div className="inset-0 glass z-50 fixed grid place-items-center">
+          <TailSpin color="black" height={52} />
+        </div>
+      )}
       {form && (
         <div className="fixed inset-0 glass z-50 grid place-items-center">
           <div className="w-[min(440px,96%)] bg-white rounded">
@@ -25,31 +91,50 @@ const CampaignDetails = () => {
               />{" "}
               Volunteer in this campaign
             </div>
-            <div className="p-3 grid gap-y-4">
-              <input
-                type="text"
-                className="w-full border p-2 text-sm"
-                placeholder="Full name"
-              />
-              <input
-                type="text"
-                className="w-full border p-2 text-sm"
-                placeholder="Email address"
-              />
-              <input
-                type="text"
-                className="w-full border p-2 text-sm"
-                placeholder="Phone number"
-              />
-              <input
-                type="text"
-                className="w-full border p-2 text-sm"
-                placeholder="Alternate number"
-              />
-              <button className="bg-teal-800 text-white text-sm w-full p-2">
-                Submit
-              </button>
-            </div>
+            <form action="" onSubmit={handleSubmit(joinSession)}>
+              <div className="p-3 grid gap-y-4">
+                <input
+                  type="text"
+                  className="w-full border p-2 text-sm"
+                  placeholder="Full name"
+                  {...register("name")}
+                  required
+                />
+                <input
+                  type="email"
+                  className="w-full border p-2 text-sm"
+                  placeholder="Email address"
+                  {...register("email")}
+                  required
+                />
+                <input
+                  type="text"
+                  className="w-full border p-2 text-sm"
+                  placeholder="Phone number"
+                  {...register("phone")}
+                  required
+                />
+                <input
+                  type="text"
+                  className="w-full border p-2 text-sm"
+                  placeholder="Alternate number"
+                  {...register("alternate")}
+                  required
+                />
+                {submitting ? (
+                  <button
+                    className="bg-teal-800 flex justify-center text-white text-sm w-full p-2 opacity-50"
+                    disabled
+                  >
+                    <TailSpin height={22} color="white" />
+                  </button>
+                ) : (
+                  <button className="bg-teal-800 text-white text-sm w-full p-2">
+                    Submit
+                  </button>
+                )}
+              </div>
+            </form>
             <div className="text-xs p-3 text-gray-600">
               Details regarding the venue and timigns will be shared via email,
               on your registered email address
@@ -59,39 +144,14 @@ const CampaignDetails = () => {
       )}
       <Navbar />
       <div className="w-[min(760px,96%)] mx-auto">
-        <div className="text-xl font-bold py-4">
-          This is the title for this volunteering session, it can be added from
-          start new
-        </div>
-        <img
-          src="https://picsum.photos/400/200"
-          className="w-full h-full"
-          alt=""
-        />
+        <div className="text-xl font-bold py-4">{data?.title}</div>
+        <img src={data?.image} className="w-full h-full" alt="" />
         <div className="flex text-sm items-center gap-2 py-4 border-b text-gray-600">
-          <BsPerson size={18} /> Insha hasan has started this session
+          <BsPerson size={18} /> {data?.name} has started this session
         </div>
         <div>
           <div className="font-medium mt-2">Reason for this campaign</div>
-          <p className="text-sm mt-2">
-            Lorem ipsum, dolor sit amet consectetur adipisicing elit. Dolore
-            vero tempora unde praesentium! Cumque asperiores, nulla veritatis
-            rerum a consectetur sit voluptatum recusandae soluta alias id nihil
-            expedita velit dolore! Lorem ipsum, dolor sit amet consectetur
-            adipisicing elit. Dolore vero tempora unde praesentium! Cumque
-            asperiores, nulla veritatis rerum a consectetur sit voluptatum
-            recusandae soluta alias id nihil expedita velit dolore! Lorem ipsum,
-            dolor sit amet consectetur adipisicing elit. Dolore vero tempora
-            unde praesentium! Cumque asperiores, nulla veritatis rerum a
-            consectetur sit voluptatum recusandae soluta alias id nihil expedita
-            velit dolore! Lorem ipsum, dolor sit amet consectetur adipisicing
-            elit. Dolore vero tempora unde praesentium! Cumque asperiores, nulla
-            veritatis rerum a consectetur sit voluptatum recusandae soluta alias
-            id nihil expedita velit dolore! Lorem ipsum, dolor sit amet
-            consectetur adipisicing elit. Dolore vero tempora unde praesentium!
-            Cumque asperiores, nulla veritatis rerum a consectetur sit
-            voluptatum recusandae soluta alias id nihil expedita velit dolore!
-          </p>
+          <p className="text-sm mt-2">{data?.story}</p>
         </div>
         <div className="flex gap-2 mt-4 border-b pb-4">
           <button
@@ -108,10 +168,10 @@ const CampaignDetails = () => {
         </div>
         <div className="grid grid-cols-2 py-5 gap-3 border-b">
           <div className="flex gap-4 items-center  border-teal-800 rounded bg-teal-100 justify-center py-6 font-medium">
-            <BsPeople size={24} /> 4 People requierd
+            <BsPeople size={24} /> {data?.people} People requierd
           </div>
           <div className="flex gap-4 items-center  border-teal-800 rounded bg-teal-100 justify-center py-6 font-medium">
-            <BsCalendar size={24} /> 4 People requierd
+            <BsCalendar size={24} /> Starts on {data?.date}
           </div>
         </div>
         <div className="text-lg font-medium py-3">Similiar campaigns</div>

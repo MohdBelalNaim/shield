@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import {
   BsArrowRight,
@@ -8,8 +8,22 @@ import {
   BsPerson,
 } from "react-icons/bs";
 import { Link } from "react-router-dom";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../firebase";
+import { TailSpin } from "react-loader-spinner";
 
 const Voluteer = () => {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    async function getData() {
+      setLoading(true);
+      const data = await getDocs(collection(db, "campaigns"));
+      setData(data.docs);
+      setLoading(false);
+    }
+    getData();
+  }, []);
   return (
     <div>
       <Navbar />
@@ -46,45 +60,53 @@ const Voluteer = () => {
           <div className="text-xl font-medium py-4">
             Volunteer in a campaign
           </div>
-          <div className="grid grid-cols-3 gap-5">
-            {"abcdefg".split("").map((item, index) => {
-              return (
-                <div className="border rounded-md overflow-hidden">
-                  <div className="h-[200px]">
-                    <img
-                      src={`https://picsum.photos/400?${index}`}
-                      className="object-cover h-full w-full"
-                      alt=""
-                    />
-                  </div>
-                  <div className="p-3">
-                    <div className="text-sm font-medium">
-                      This is a test volunteering campaign, you cannot enroll in
-                      this, This is just for testing
+          {loading ? (
+            <div className="h-[200px] w-full grid place-items-center">
+              <TailSpin color="teal" height={52} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-5">
+              {data.map((item, index) => {
+                const campaign = item.data();
+                return (
+                  <div className="border rounded-md overflow-hidden">
+                    <div className="h-[200px]">
+                      <img
+                        src={campaign.image}
+                        className="object-cover h-full w-full"
+                        alt=""
+                      />
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
-                      <BsPerson size={16} /> Insha hasan is leading this session
-                    </div>
-                    <div className="flex items-center gap-5 text-sm mt-2 pt-3 border-t">
-                      <div className="flex items-center gap-2">
-                        <BsPeople size={18} /> 4 People required
+                    <div className="p-3">
+                      <div className="text-sm font-medium">
+                        {campaign.title}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <BsCalendar /> Starts on 1-11-2024
+                      <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
+                        <BsPerson size={16} /> {campaign?.name} is leading this
+                        session
+                      </div>
+                      <div className="flex items-center gap-5 text-sm mt-2 pt-3 border-t">
+                        <div className="flex items-center gap-2">
+                          <BsPeople size={18} /> {campaign.people} People
+                          required
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <BsCalendar /> Starts on {campaign.date}
+                        </div>
+                      </div>
+                      <div className="border-t pt-3 mt-2">
+                        <Link to={`/campaign/${item.id}`}>
+                          <button className="flex items-center gap-2 bg-teal-800 text-white text-xs px-3 py-2 rounded-full">
+                            See details <BsEye />{" "}
+                          </button>
+                        </Link>
                       </div>
                     </div>
-                    <div className="border-t pt-3 mt-2">
-                      <Link to="/campaign">
-                        <button className="flex items-center gap-2 bg-teal-800 text-white text-xs px-3 py-2 rounded-full">
-                          See details <BsEye />{" "}
-                        </button>
-                      </Link>
-                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -10,14 +10,24 @@ import {
 import { BiDonateHeart } from "react-icons/bi";
 import Navbar from "../components/Navbar";
 import { Link } from "react-router-dom";
+import { collection, getDocs, limit, query } from "firebase/firestore";
+import { db } from "../firebase";
+import ProductCard from "../components/ProductCard";
+import { TailSpin } from "react-loader-spinner";
 const Home = () => {
   const [products, setProducts] = useState([]);
-  const [acquire, setAcquire] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch("https://fakestoreapi.com/products?limit=3")
-      .then((res) => res.json())
-      .then((data) => setProducts(data));
+    window.scrollTo(0, 0);
+    async function getData() {
+      setLoading(true);
+      const q = query(collection(db, "donations"), limit(6));
+      const data = await getDocs(q);
+      setProducts(data.docs);
+      setLoading(false);
+    }
+    getData();
   }, []);
   const topIndianNGOs = [
     {
@@ -71,51 +81,6 @@ const Home = () => {
   ];
   return (
     <div>
-      {acquire && (
-        <div className="fixed inset-0 glass z-50 grid place-items-center">
-          <div className="w-[min(440px,96%)] bg-white rounded">
-            <div className="p-3 text-center border-b relative">
-              <BsX
-                onClick={() => setAcquire(false)}
-                className="absolute text-xl cursor-pointer"
-              />{" "}
-              Request acquisition
-            </div>
-            <div className="p-3 grid gap-y-4">
-              <input
-                type="text"
-                className="w-full border p-2 text-sm"
-                placeholder="Full name"
-              />
-              <input
-                type="text"
-                className="w-full border p-2 text-sm"
-                placeholder="Email address"
-              />
-              <input
-                type="text"
-                className="w-full border p-2 text-sm"
-                placeholder="Phone number"
-              />
-              <textarea
-                className="w-full border p-2 text-sm"
-                placeholder="Why do you need this item?"
-                id=""
-                cols="30"
-                rows="5"
-              ></textarea>
-              <input
-                type="text"
-                className="w-full border p-2 text-sm"
-                placeholder="Alternate number"
-              />
-              <button className="bg-teal-800 text-white text-sm w-full p-2">
-                Submit
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       <Navbar />
       <div className="bg-cover bg-[url('https://www.savethechildren.org/content/dam/usa/images/global-programs/protection/uganda-refugee-ch192751-rec.jpg/_jcr_content/renditions/original.img.jpg')]">
         <div className="backdrop-brightness-[0.25] py6">
@@ -238,42 +203,17 @@ const Home = () => {
           <div className="text-xl py-6 text-teal-900 font-medium flex items-center gap-3">
             <BsBox size={28} /> Goods available for free
           </div>
-          <div className="grid grid-cols-3 gap-4">
-            {"abcdef".split("").map((item, index) => {
-              return (
-                <div className="rounded-md border overflow-hidden bg-white">
-                  <div className="h-[200px]">
-                    <img
-                      src={`https://picsum.photos/400?${index}`}
-                      className="object-cover h-full w-full"
-                      alt=""
-                    />
-                  </div>
-                  <div className="px-3.5 py-6">
-                    <div className="font-medium">
-                      Timex automatic watch 44 mm, Silver case, With chronograph
-                      for free
-                    </div>
-                    <div className="flex items-center mt-3 bg-teal-100 px-4 text-xs gap-3 w-max border rounded-full p-1.5">
-                      <BsPerson size={16} /> Insha hasan is donating this
-                      product
-                    </div>
-                  </div>
-                  <div className="border-t px-3 py-4 flex gap-3">
-                    <div
-                      onClick={() => setAcquire(true)}
-                      className="cursor-pointer flex items-center gap-2 text-xs bg-teal-800 w-max text-white px-3 py-2 rounded-full"
-                    >
-                      <BsHeart /> Request to acquire
-                    </div>
-                    <div className="flex items-center gap-2 text-xs bg-teal-800 w-max text-white px-3 py-2 rounded-full">
-                      <BsPhone /> Call the donor
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {loading ? (
+            <div className="h-[240px] grid place-items-center">
+              <TailSpin height={52} color="teal" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-4">
+              {products.map((item, index) => {
+                return <ProductCard product={item.data()} id={item.id} />;
+              })}
+            </div>
+          )}
           <div className="flex justify-center w-full mt-5">
             <Link to="/all-donations">
               <button className="flex bg-teal-800 items-center text-white text-sm px-3 py-2 rounded-full">

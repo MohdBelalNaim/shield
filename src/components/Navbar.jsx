@@ -1,8 +1,25 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { PiHandHeartLight } from "react-icons/pi";
-import { Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
+import { login, logout } from "../redux/authSlice";
+import { toast } from "sonner";
 
 const Navbar = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (localStorage.getItem("user")) {
+      dispatch(login());
+    }
+  }, []);
+  function logoutuser() {
+    localStorage.clear();
+    navigate("/");
+    dispatch(logout());
+    toast.success("logged out successfully!");
+  }
+  const auth = useSelector((state) => state.authSlice.loggedIn);
   return (
     <div className="flex items-center justify-between p-4 border-b">
       <Link to="/">
@@ -12,13 +29,21 @@ const Navbar = () => {
         <Link to="/volunteer">
           <div className="font-medium cursor-pointer">Volunteer</div>
         </Link>
-        <Link to="/login">
-          <div className="font-medium cursor-pointer">Login</div>
-        </Link>
-        <Link to="/profile">
-          <div className="font-medium cursor-pointer">My profile</div>
-        </Link>
-        <div className="font-medium cursor-pointer">Support a cause</div>
+        {auth ? (
+          <>
+            <div className="font-medium cursor-pointer" onClick={logoutuser}>
+              Logout
+            </div>
+            <Link to="/profile">
+              <div className="font-medium cursor-pointer">My profile</div>
+            </Link>
+          </>
+        ) : (
+          <Link to="/login">
+            <div className="font-medium cursor-pointer">Login</div>
+          </Link>
+        )}
+
         <Link to="/ngo">
           <div className="font-medium cursor-pointer">Support an NGO</div>
         </Link>

@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import {
   BsArrowRight,
   BsBook,
@@ -6,20 +8,52 @@ import {
   BsHandIndex,
   BsPerson,
 } from "react-icons/bs";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { auth } from "../firebase";
+import { TailSpin } from "react-loader-spinner";
+import { toast } from "sonner";
+import { useDispatch } from "react-redux";
+import { login } from "../redux/authSlice";
 
 const Login = () => {
+  const [loading, setLoading] = useState(false);
+  const { handleSubmit, register } = useForm();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  function userLogin(data) {
+    setLoading(true);
+    signInWithEmailAndPassword(auth, data.email, data.password)
+      .then(() => {
+        toast.success("Signed in");
+        navigate("/");
+        localStorage.setItem("user", data.email);
+        setLoading(false);
+        dispatch(login());
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        console.log(errorCode);
+        if (errorCode == "auth/invalid-credential") {
+          toast.error("Invalid email or password");
+        }
+        setLoading(false);
+      });
+  }
   const inputs = [
     {
       label: "Email Address",
+      name: "email",
+      type: "email",
     },
     {
       label: "Password",
+      name: "password",
+      type: "password",
     },
   ];
   return (
     <div className="grid grid-cols-2">
-      <div className="h-[100dvh] p-24 bg-teal-700 text-white overflow-hidden border-r">
+      <div className="h-[100dvh] overflow-scroll p-24 bg-teal-700 text-white border-r">
         <div className="">
           <div className="text-4xl">
             It all starts{" "}
@@ -84,24 +118,37 @@ const Login = () => {
             needy, and others
           </div>
           <div className="w-[min(74%,96%)] mx-auto mt-9">
-            {inputs.map((item) => {
-              return (
-                <>
-                  <label htmlFor="" className="text-sm">
-                    {item.label}
-                  </label>
-                  <input
-                    type="text"
-                    className="border w-full border-gray-300 p-2.5 mb-5 text-sm mt-1"
-                    placeholder={`Your ${item.label} here`}
-                  />
-                </>
-              );
-            })}
+            <form action="" onSubmit={handleSubmit(userLogin)}>
+              {inputs.map((item) => {
+                return (
+                  <>
+                    <label htmlFor="" className="text-sm">
+                      {item.label}
+                    </label>
+                    <input
+                      type={item.type}
+                      {...register(item.name)}
+                      className="border w-full border-gray-300 p-2.5 mb-5 text-sm mt-1"
+                      placeholder={`Your ${item.label} here`}
+                      required
+                    />
+                  </>
+                );
+              })}
 
-            <button className="w-full flex items-center gap-2 justify-center text-sm bg-teal-600 text-white p-2.5">
-              Login <BsArrowRight />
-            </button>
+              {loading ? (
+                <button
+                  disabled
+                  className="w-full flex items-center gap-2 justify-center text-sm bg-teal-600 text-white p-2.5 disabled:opacity-40"
+                >
+                  <TailSpin height={22} color="white" />{" "}
+                </button>
+              ) : (
+                <button className="w-full flex items-center gap-2 justify-center text-sm bg-teal-600 text-white p-2.5">
+                  Login <BsArrowRight />
+                </button>
+              )}
+            </form>{" "}
             <Link to="/signup">
               <div className="text-center mt-5 underline">
                 I don't have an account
